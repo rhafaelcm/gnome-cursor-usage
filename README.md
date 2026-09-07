@@ -1,4 +1,4 @@
-# Cursor Usage
+# Gnome Cursor Usage
 
 A GNOME Shell extension that shows **Cursor**, **Claude Code**, and **Codex**
 plan usage in the top bar.
@@ -7,6 +7,17 @@ It is inspired by
 [omarchy-cursor-usage](https://github.com/mrlarsendk/omarchy-cursor-usage), but
 it is a native GNOME panel indicator: Adwaita styling, the current GNOME accent
 color, and light or dark mode from Settings.
+
+Unofficial extension. It is not affiliated with GNOME, Cursor, Anthropic, or
+OpenAI.
+
+## Screenshots
+
+![Popup with Cursor plan limits and token charts](img/screenshot-1.png)
+
+![Preferences: General](img/screenshot-2.png)
+
+![Preferences: Accounts](img/screenshot-3.png)
 
 ## What you get
 
@@ -43,20 +54,20 @@ On Wayland, log out and back in so GNOME Shell loads the new extension, then
 enable it:
 
 ```bash
-gnome-extensions enable cursor-usage@gnome-cursor-usage
+gnome-extensions enable gnome-cursor-usage@rhafaelcm.github.io
 ```
 
 Open preferences with:
 
 ```bash
-gnome-extensions prefs cursor-usage@gnome-cursor-usage
+gnome-extensions prefs gnome-cursor-usage@rhafaelcm.github.io
 ```
 
 To build an installable zip:
 
 ```bash
 ./install.sh pack
-gnome-extensions install --force cursor-usage@gnome-cursor-usage.shell-extension.zip
+gnome-extensions install --force gnome-cursor-usage@rhafaelcm.github.io.shell-extension.zip
 ```
 
 ## Authentication
@@ -152,6 +163,6 @@ journalctl -f -o cat /usr/bin/gnome-shell
 
 MIT. See [LICENSE](LICENSE).
 
-Cursor, Claude, and Codex names are used only to identify the services whose
-usage is shown. This project is not affiliated with Anysphere, Anthropic,
-OpenAI, or Omarchy.
+GNOME, Cursor, Claude, and Codex names are used only to identify the desktop
+and the services whose usage is shown. This project is not affiliated with the
+GNOME Foundation, Anysphere, Anthropic, OpenAI, or Omarchy.
