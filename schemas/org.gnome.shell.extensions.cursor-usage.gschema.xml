@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.cursor-usage" path="/org/gnome/shell/extensions/cursor-usage/">
+    <key name="refresh-interval" type="i">
+      <default>300</default>
+      <range min="60" max="3600"/>
+      <summary>Refresh interval</summary>
+      <description>Seconds between background usage updates.</description>
+    </key>
+    <key name="show-percentage" type="b">
+      <default>true</default>
+      <summary>Show percentage on the panel</summary>
+      <description>Display the active provider usage percentage next to the icon.</description>
+    </key>
+    <key name="enable-cursor" type="b">
+      <default>true</default>
+      <summary>Enable Cursor</summary>
+      <description>Fetch and show Cursor plan usage.</description>
+    </key>
+    <key name="enable-codex" type="b">
+      <default>true</default>
+      <summary>Enable Codex</summary>
+      <description>Fetch and show Codex plan usage.</description>
+    </key>
+    <key name="enable-claude" type="b">
+      <default>true</default>
+      <summary>Enable Claude Code</summary>
+      <description>Fetch and show Claude Code plan usage.</description>
+    </key>
+    <key name="active-provider" type="s">
+      <default>"cursor"</default>
+      <summary>Active provider</summary>
+      <description>Provider shown in the panel and selected in the popup. One of "cursor", "claude", or "codex".</description>
+    </key>
+    <key name="cursor-state-db" type="s">
+      <default>""</default>
+      <summary>Cursor IDE state database</summary>
+      <description>Optional path to Cursor state.vscdb. Empty uses the default location.</description>
+    </key>
+    <key name="cursor-auth-json" type="s">
+      <default>""</default>
+      <summary>Cursor Agent auth file</summary>
+      <description>Optional path to cursor-agent auth.json. Empty uses the default location.</description>
+    </key>
+    <key name="codex-auth-json" type="s">
+      <default>""</default>
+      <summary>Codex auth file</summary>
+      <description>Optional path to Codex auth.json. Empty searches the default locations.</description>
+    </key>
+    <key name="claude-auth-json" type="s">
+      <default>""</default>
+      <summary>Claude Code credentials file</summary>
+      <description>Optional path to Claude Code .credentials.json. Empty searches the default locations.</description>
+    </key>
+  </schema>
+</schemalist>

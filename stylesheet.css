@@ -1,0 +1,97 @@
+.cursor-usage-popup {
+    min-width: 22em;
+    max-width: 28em;
+    spacing: 2px;
+    padding: 4px 2px 2px;
+}
+
+.cursor-usage-header {
+    spacing: 10px;
+    padding: 2px 0 6px;
+}
+
+.cursor-usage-header-text {
+    spacing: 2px;
+}
+
+.cursor-usage-settings-button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 6px;
+    border-radius: 99px;
+}
+
+.cursor-usage-title {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.cursor-usage-subtitle {
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
+.cursor-usage-tabs {
+    spacing: 6px;
+    padding: 2px 0 8px;
+}
+
+.cursor-usage-tab {
+    padding: 4px 8px;
+    border-radius: 99px;
+}
+
+.cursor-usage-section-label {
+    font-weight: 600;
+    font-size: 0.75em;
+    letter-spacing: 0.06em;
+    padding: 10px 0 4px;
+    opacity: 0.7;
+}
+
+.cursor-usage-row {
+    spacing: 8px;
+}
+
+.cursor-usage-metric {
+    font-feature-settings: "tnum";
+    opacity: 0.85;
+}
+
+.cursor-usage-hint {
+    font-size: 0.85em;
+    opacity: 0.7;
+    padding: 2px 0 6px;
+}
+
+.cursor-usage-status {
+    spacing: 8px;
+    padding: 8px 0 4px;
+}
+
+.cursor-usage-bar-track {
+    height: 6px;
+    min-height: 6px;
+    border-radius: 99px;
+    background-color: alpha(currentColor, 0.15);
+}
+
+.cursor-usage-bar-fill {
+    height: 6px;
+    min-height: 6px;
+    border-radius: 99px;
+    background-color: -st-accent-color;
+}
+
+.cursor-usage-day-label {
+    min-width: 3.2em;
+}
+
+.cursor-usage-panel-box {
+    spacing: 6px;
+}
+
+.cursor-usage-panel-label {
+    font-weight: 600;
+    font-feature-settings: "tnum";
+}
