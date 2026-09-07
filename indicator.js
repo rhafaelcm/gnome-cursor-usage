@@ -66,7 +66,7 @@ export const UsageIndicator = GObject.registerClass({
 });
 
 function panelAccessibleName(state, record, text) {
-    const name = record?.name || _('Cursor Usage');
+    const name = record?.name || _('Gnome Cursor Usage');
     if (text)
         return `${name} ${text}`;
     if (record?.usageStatusText)

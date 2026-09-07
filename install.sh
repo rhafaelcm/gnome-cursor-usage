@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UUID="cursor-usage@gnome-cursor-usage"
+UUID="gnome-cursor-usage@rhafaelcm.github.io"
 SRC="$(cd "$(dirname "$0")" && pwd)"
 DEST="${HOME}/.local/share/gnome-shell/extensions/${UUID}"
 
@@ -18,15 +18,7 @@ pack() {
       --out-dir="$SRC" \
       --extra-source=indicator.js \
       --extra-source=popup.js \
-      --extra-source=lib/format.js \
-      --extra-source=lib/http.js \
-      --extra-source=lib/credentials.js \
-      --extra-source=lib/login.js \
-      --extra-source=lib/cursor.js \
-      --extra-source=lib/claude.js \
-      --extra-source=lib/codex.js \
-      --extra-source=lib/providers.js \
-      --extra-source=lib/ui.js \
+      --extra-source=lib \
       --extra-source=icons \
       --extra-source=LICENSE \
       --extra-source=README.md

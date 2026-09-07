@@ -1,17 +1,14 @@
 {
-    "uuid": "cursor-usage@gnome-cursor-usage",
-    "name": "Cursor Usage",
-    "description": "Show Cursor, Claude Code, and Codex plan usage in the GNOME top bar. Reads your local sign-in for each provider, then displays quota meters in a native GNOME panel menu.",
+    "uuid": "gnome-cursor-usage@rhafaelcm.github.io",
+    "name": "Gnome Cursor Usage",
+    "description": "Shows Cursor, Claude Code, and Codex plan usage in the GNOME top bar.\n\nUnofficial extension. It does not register its own OAuth app. It reads the local sign-in each CLI or IDE already stores, then queries that vendor usage API.",
     "shell-version": [
         "48",
         "49",
         "50"
     ],
-    "session-modes": [
-        "user"
-    ],
+    "url": "https://github.com/rhafaelcm/gnome-cursor-usage",
     "settings-schema": "org.gnome.shell.extensions.cursor-usage",
-    "gettext-domain": "cursor-usage@gnome-cursor-usage",
-    "version": 1,
+    "gettext-domain": "gnome-cursor-usage@rhafaelcm.github.io",
     "version-name": "1.1.0"
 }
