@@ -10,5 +10,5 @@
     "url": "https://github.com/rhafaelcm/gnome-cursor-usage",
     "settings-schema": "org.gnome.shell.extensions.cursor-usage",
     "gettext-domain": "gnome-cursor-usage@rhafaelcm.github.io",
-    "version-name": "1.1.0"
+    "version-name": "1.2.0"
 }
