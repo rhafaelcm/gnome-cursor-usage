@@ -27,7 +27,8 @@ OpenAI.
 - **Cursor:** Included total / Cursor Models / Other Models, tokens by day, and tokens by model
 - **Claude Code:** 5-hour, weekly, and optional per-model weekly windows
 - **Codex:** 5-hour and weekly quota windows
-- Sign in from the popup or from Preferences
+- Sign in from the popup or from Preferences when a provider is not signed in
+  locally. The login command is selectable so you can copy it into a terminal.
 
 The popup uses standard GNOME Shell widgets and theme colors. When you change
 the accent color or color scheme in GNOME Settings, the bars and icon follow
@@ -37,8 +38,11 @@ those colors.
 
 - GNOME Shell 48, 49, or 50
 - `gjs` and `libsoup3`
-- `sqlite3` on `PATH` if you want the extension to read a live Cursor IDE session
-  from `state.vscdb` (optional when `cursor-agent` is already signed in)
+- **Recommended:** `sqlite3` on the system `PATH`, so the extension can read the
+  Cursor IDE session and account email from `state.vscdb`. On Debian/Ubuntu:
+  `sudo apt install sqlite3`. Without it, Cursor still works if `cursor-agent`
+  is signed in, but the IDE database (and the email stored there) may not be
+  read.
 - A local Cursor, Claude Code, and/or Codex sign-in (see Authentication)
 
 ## Install
@@ -81,7 +85,7 @@ calls each vendor's usage endpoint.
 Credentials are read in this order:
 
 1. Cursor IDE: `~/.config/Cursor/User/globalStorage/state.vscdb`
-   (`cursorAuth/accessToken`)
+   (`cursorAuth/accessToken`). Install `sqlite3` so this file can be read.
 2. Cursor Agent: `~/.config/cursor/auth.json` (after `cursor-agent login`)
 
 **Sign in** launches `cursor-agent login` when that CLI is installed. That
@@ -90,12 +94,19 @@ is missing, the extension opens the Cursor app instead so you can sign in there.
 
 ### Claude Code
 
-Credentials are read from `~/.claude/.credentials.json` (or
-`$CLAUDE_CONFIG_DIR/.credentials.json` when that environment variable is set).
+Plan (Claude.ai Pro/Max) credentials are read from
+`~/.claude/.credentials.json` (`claudeAiOauth`) or
+`$CLAUDE_CONFIG_DIR/.credentials.json` when that environment variable is set.
 
-**Sign in** launches `claude login` when the Claude Code CLI is installed.
-Expired access tokens are refreshed with the stored refresh token and written
-back to the same file. Refresh tokens are single-use, so the file is re-read
+API / prepaid login is read from
+`~/.config/anthropic/credentials/default.json`. That session can show the
+account email, but it does **not** have the 5-hour and weekly plan bars. Those
+meters need `claude login` and the Claude.ai subscription option.
+
+**Sign in** launches `claude login` when the Claude Code CLI is installed, and
+the popup also shows that command so you can copy it. Expired plan access
+tokens are refreshed with the stored refresh token and written back to
+`.credentials.json`. Refresh tokens are single-use, so the file is re-read
 before and after a refresh to avoid racing with Claude Code itself.
 
 ### Codex
@@ -113,7 +124,8 @@ OpenAI/Codex usage endpoints over HTTPS.
 
 1. Enable the extension. The icon appears in the top-bar status area.
 2. Click the icon.
-3. If you are not signed in, choose **Sign in** and finish the browser or app flow.
+3. If you are not signed in, choose **Sign in** (opens the CLI or Cursor app)
+   or copy the login command from the popup and run it in a terminal.
 4. Switch between **Cursor**, **Claude**, and **Codex** with the tabs.
 5. Use **Refresh** to update immediately. Background refresh defaults to every 5 minutes.
 
@@ -127,15 +139,15 @@ Those APIs do not provide per-day token charts like Cursor.
 - Default provider for the panel
 - Refresh interval
 - Optional credential file paths
-- Account status and Sign in buttons
+- Account status and a Sign in button when that provider is not signed in locally
 
 ## Privacy
 
 - Reads only the local credential files listed above
 - Sends those credentials only to the matching vendor usage API
 - No telemetry and no third-party analytics
-- Sign out runs `cursor-agent logout`, `claude logout`, or `codex logout` when
-  available. It does not edit the Cursor IDE database.
+- The extension does not sign you out of Cursor, Claude Code, or Codex. Those
+  sessions belong to the app or CLI.
 
 ## Unofficial APIs
 

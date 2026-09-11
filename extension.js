@@ -17,7 +17,7 @@ import {
 import {createRecord} from './lib/format.js';
 import {HttpClient, isCancelled} from './lib/http.js';
 import {CursorClient} from './lib/cursor.js';
-import {startProviderLogin, startProviderLogout} from './lib/login.js';
+import {startProviderLogin} from './lib/login.js';
 import {isProviderId, listEnabledProviders, resolveActiveProvider} from './lib/providers.js';
 import {UsageIndicator} from './indicator.js';
 
@@ -31,7 +31,6 @@ export default class CursorUsageExtension extends Extension {
         this._codexClient = new CodexClient(this._http);
         this._timeoutId = 0;
         this._pollId = 0;
-        this._logoutTimeoutId = 0;
         this._refreshing = false;
         this._lastFullRefresh = 0;
         this._cursor = createRecord('cursor', 'Cursor');
@@ -57,10 +56,6 @@ export default class CursorUsageExtension extends Extension {
     disable() {
         this._stopTimer();
         this._stopPoll();
-        if (this._logoutTimeoutId) {
-            GLib.source_remove(this._logoutTimeoutId);
-            this._logoutTimeoutId = 0;
-        }
         if (this._cancellable) {
             this._cancellable.cancel();
             this._cancellable = null;
@@ -156,18 +151,6 @@ export default class CursorUsageExtension extends Extension {
         if (!result.started)
             return;
         await this._pollForLogin(provider);
-    }
-
-    async signOut(provider) {
-        startProviderLogout(provider);
-        this._lastFullRefresh = 0;
-        if (this._logoutTimeoutId)
-            GLib.source_remove(this._logoutTimeoutId);
-        this._logoutTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
-            this._logoutTimeoutId = 0;
-            this.refresh({full: false, force: true});
-            return GLib.SOURCE_REMOVE;
-        });
     }
 
     _onSettingsChanged(key) {

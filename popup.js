@@ -12,7 +12,7 @@ import {
     formatTokens,
     tokenTotal,
 } from './lib/format.js';
-import {providerAuthHelp} from './lib/login.js';
+import {providerAuthHelp, providerLoginCommandText} from './lib/login.js';
 import {listEnabledProviders, pickRecord} from './lib/providers.js';
 import {createBar, createBox, loadUsageIcon} from './lib/ui.js';
 
@@ -38,9 +38,6 @@ export class UsagePopup {
         });
         this._signInItem = this._menu.addAction(_('Sign in'), () => {
             this._extension.signIn(this._state?.activeProvider);
-        });
-        this._signOutItem = this._menu.addAction(_('Sign out'), () => {
-            this._extension.signOut(this._state?.activeProvider);
         });
     }
 
@@ -68,12 +65,14 @@ export class UsagePopup {
         if (providers.length > 1)
             this._addTabs(state);
 
-        if (state.loading && !record?.ready && !record?.usageStatusText)
+        if (state.loading && !record?.ready && !record?.signedIn && !record?.usageStatusText)
             this._addStatus(_('Updating…'), '');
-        else if (!record?.ready)
-            this._addSignedOut(record, state.activeProvider);
-        else
+        else if (record?.ready)
             this._addReady(record);
+        else if (record?.signedIn)
+            this._addStatus(record.usageStatusText || _('Signed in'), record.authHelpText || '');
+        else
+            this._addSignedOut(record, state.activeProvider);
 
         this._updateActions(record);
     }
@@ -96,9 +95,9 @@ export class UsagePopup {
             text: record?.name || _('Usage'),
             style_class: 'cursor-usage-title',
         }));
-        text.add_child(new St.Label({
-            text: record?.ready ? (record.tierLabel || _('Signed in')) : _('Not signed in'),
+        text.add_child(ellipsizeLabel(headerSubtitle(record), {
             style_class: 'cursor-usage-subtitle',
+            x_expand: true,
         }));
         header.add_child(text);
         header.add_child(this._settingsButton());
@@ -154,13 +153,36 @@ export class UsagePopup {
     _addSignedOut(record, provider) {
         const help = record?.authHelpText || providerAuthHelp(provider);
         this._addStatus(record?.usageStatusText || _('Not signed in'), help);
+        const command = providerLoginCommandText(provider);
+        if (command)
+            this._addCopyableCommand(command);
+    }
+
+    _addCopyableCommand(command) {
+        const label = new St.Label({
+            text: command,
+            style_class: 'cursor-usage-hint cursor-usage-command',
+            x_expand: true,
+        });
+        label.clutter_text.line_wrap = true;
+        label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        label.clutter_text.selectable = true;
+        this._root.add_child(label);
     }
 
     _addStatus(title, subtitle) {
         const box = createBox({vertical: true, style_class: 'cursor-usage-status'});
         box.add_child(new St.Label({text: title, style_class: 'cursor-usage-title'}));
-        if (subtitle)
-            box.add_child(new St.Label({text: subtitle, style_class: 'cursor-usage-hint'}));
+        if (subtitle) {
+            const hint = new St.Label({
+                text: subtitle,
+                style_class: 'cursor-usage-hint',
+                x_expand: true,
+            });
+            hint.clutter_text.line_wrap = true;
+            hint.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+            box.add_child(hint);
+        }
         this._root.add_child(box);
     }
 
@@ -247,9 +269,22 @@ export class UsagePopup {
 
     _updateActions(record) {
         this._refreshItem.visible = Boolean(record);
-        this._signInItem.visible = Boolean(record) && !record.ready;
-        this._signOutItem.visible = Boolean(record?.ready);
+        this._signInItem.visible = Boolean(record) && !record.ready && !record.signedIn;
     }
+}
+
+function headerSubtitle(record) {
+    if (!record?.ready && !record?.signedIn)
+        return _('Not signed in');
+    const tier = String(record.tierLabel || '').trim();
+    const email = String(record.accountEmail || '').trim();
+    if (tier && email)
+        return `${tier} · ${email}`;
+    if (tier)
+        return tier;
+    if (email)
+        return email;
+    return _('Signed in');
 }
 
 function ellipsizeLabel(text, params = {}) {

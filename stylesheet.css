@@ -64,6 +64,10 @@
     padding: 2px 0 6px;
 }
 
+.cursor-usage-command {
+    font-family: monospace;
+}
+
 .cursor-usage-status {
     spacing: 8px;
     padding: 8px 0 4px;

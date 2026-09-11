@@ -6,6 +6,13 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {
+    defaultAnthropicCredentialJson,
+    defaultClaudeAuthJsons,
+    defaultCodexAuthJsons,
+    defaultCursorAuthJson,
+    defaultCursorStateDb,
+    expandUserPath,
+    isRegularFile,
     readClaudeCredentials,
     readCodexCredentials,
     readCursorCredentials,
@@ -17,10 +24,12 @@ import {
     claudeAuthHelp,
     codexAuthHelp,
     cursorAuthHelp,
+    providerLoginCommandText,
     startClaudeLogin,
     startCodexLogin,
     startCursorLogin,
 } from './lib/login.js';
+import {pickAccountEmail} from './lib/format.js';
 import {PROVIDER_IDS} from './lib/providers.js';
 
 export default class CursorUsagePreferences extends ExtensionPreferences {
@@ -29,7 +38,7 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         const providerLabels = [_('Cursor'), _('Claude Code'), _('Codex')];
         window._settings = settings;
         window._cancelPolls = [];
-        window.set_default_size(640, 780);
+        window.set_default_size(640, 880);
 
         const general = new Adw.PreferencesPage({
             title: _('General'),
@@ -169,6 +178,7 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         });
         settings.bind('cursor-state-db', cursorDb, 'text', Gio.SettingsBindFlags.DEFAULT);
         cursorGroup.add(cursorDb);
+        const cursorDbPath = addPathStatusRow(cursorGroup);
 
         const cursorAuth = new Adw.EntryRow({
             title: _('cursor-agent auth.json'),
@@ -176,6 +186,7 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         });
         settings.bind('cursor-auth-json', cursorAuth, 'text', Gio.SettingsBindFlags.DEFAULT);
         cursorGroup.add(cursorAuth);
+        const cursorAuthPath = addPathStatusRow(cursorGroup);
 
         const claudeGroup = new Adw.PreferencesGroup({
             title: _('Claude Code'),
@@ -208,6 +219,8 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         });
         settings.bind('claude-auth-json', claudeAuth, 'text', Gio.SettingsBindFlags.DEFAULT);
         claudeGroup.add(claudeAuth);
+        const claudeAuthPath = addPathStatusRow(claudeGroup);
+        const claudeApiPath = addPathStatusRow(claudeGroup);
 
         const codexGroup = new Adw.PreferencesGroup({
             title: _('Codex'),
@@ -240,17 +253,24 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         });
         settings.bind('codex-auth-json', codexAuth, 'text', Gio.SettingsBindFlags.DEFAULT);
         codexGroup.add(codexAuth);
+        const codexAuthPath = addPathStatusRow(codexGroup);
 
-        updateCursorStatus(settings, cursorStatus, cursorButton);
-        updateClaudeStatus(settings, claudeStatus, claudeButton);
-        updateCodexStatus(settings, codexStatus, codexButton);
+        const refreshAccountRows = () => {
+            updateCursorStatus(settings, cursorStatus, cursorButton);
+            updateClaudeStatus(settings, claudeStatus, claudeButton);
+            updateCodexStatus(settings, codexStatus, codexButton);
+            updatePathRows(settings, {
+                cursorDb: cursorDbPath,
+                cursorAuth: cursorAuthPath,
+                claudeAuth: claudeAuthPath,
+                claudeApi: claudeApiPath,
+                codexAuth: codexAuthPath,
+            });
+        };
+        refreshAccountRows();
 
         const pathIds = ['cursor-state-db', 'cursor-auth-json', 'claude-auth-json', 'codex-auth-json'].map(key => {
-            return settings.connect(`changed::${key}`, () => {
-                updateCursorStatus(settings, cursorStatus, cursorButton);
-                updateClaudeStatus(settings, claudeStatus, claudeButton);
-                updateCodexStatus(settings, codexStatus, codexButton);
-            });
+            return settings.connect(`changed::${key}`, refreshAccountRows);
         });
         window.connect('destroy', () => {
             for (const id of pathIds)
@@ -273,6 +293,57 @@ const RESET_SETTING_KEYS = [
     'claude-auth-json',
     'codex-auth-json',
 ];
+
+function addPathStatusRow(group) {
+    const row = new Adw.ActionRow({
+        title: _('Checking…'),
+        activatable: false,
+    });
+    group.add(row);
+    return row;
+}
+
+function displayUserPath(path) {
+    const home = GLib.get_home_dir();
+    const text = String(path || '');
+    if (home && text === home)
+        return '~';
+    if (home && text.startsWith(`${home}/`))
+        return `~/${text.slice(home.length + 1)}`;
+    return text;
+}
+
+function firstExistingPath(paths) {
+    for (const path of paths) {
+        if (isRegularFile(path))
+            return path;
+    }
+    return paths[0] || '';
+}
+
+function applyPathStatus(row, defaultPath, override = '') {
+    const custom = expandUserPath(override);
+    const using = custom || defaultPath;
+    const found = isRegularFile(using) ? _('Found') : _('Not found');
+    row.title = displayUserPath(using) || _('No path');
+    if (custom)
+        row.subtitle = `${_('Custom')} · ${found}. ${_('Default:')} ${displayUserPath(defaultPath)}`;
+    else
+        row.subtitle = `${_('Default')} · ${found}`;
+}
+
+function updatePathRows(settings, rows) {
+    applyPathStatus(rows.cursorDb, defaultCursorStateDb(), settings.get_string('cursor-state-db'));
+    applyPathStatus(rows.cursorAuth, defaultCursorAuthJson(), settings.get_string('cursor-auth-json'));
+    applyPathStatus(rows.claudeAuth, defaultClaudeAuthJsons()[0] || '', settings.get_string('claude-auth-json'));
+    applyPathStatus(rows.claudeApi, defaultAnthropicCredentialJson());
+    applyPathStatus(rows.codexAuth, firstExistingPath(defaultCodexAuthJsons()), settings.get_string('codex-auth-json'));
+}
+
+function signedInSubtitle(base, email) {
+    const clean = pickAccountEmail(email);
+    return clean ? `${base} · ${clean}` : base;
+}
 
 function providerIndex(value) {
     const index = PROVIDER_IDS.indexOf(value);
@@ -326,42 +397,56 @@ async function updateCursorStatus(settings, row, button) {
     try {
         const credentials = await readCursorCredentials(resolveCursorPaths(settings));
         if (credentials?.accessToken) {
-            row.subtitle = credentials.source === 'ide'
+            const base = credentials.source === 'ide'
                 ? _('Signed in with the Cursor app')
                 : _('Signed in with cursor-agent');
-            button.label = _('Refresh login');
+            row.subtitle = signedInSubtitle(base, credentials.email);
+            setAccountButton(button, true);
             return true;
         }
     } catch {
         // Fall through to the signed-out copy.
     }
-    row.subtitle = _('Not signed in');
-    button.label = _('Sign in');
+    row.subtitle = signedOutSubtitle('cursor');
+    setAccountButton(button, false);
     return false;
 }
 
 function updateClaudeStatus(settings, row, button) {
     const credentials = readClaudeCredentials(resolveClaudePaths(settings));
     if (credentials?.accessToken) {
-        row.subtitle = _('Signed in with the Claude Code CLI');
-        button.label = _('Refresh login');
+        const base = credentials.source === 'claude-api'
+            ? _('Signed in with Claude API')
+            : _('Signed in with the Claude Code CLI');
+        row.subtitle = signedInSubtitle(base, credentials.email);
+        setAccountButton(button, true);
         return true;
     }
-    row.subtitle = _('Not signed in');
-    button.label = _('Sign in');
+    row.subtitle = signedOutSubtitle('claude');
+    setAccountButton(button, false);
     return false;
 }
 
 function updateCodexStatus(settings, row, button) {
     const credentials = readCodexCredentials(resolveCodexPaths(settings));
     if (credentials?.accessToken) {
-        row.subtitle = _('Signed in with the Codex CLI');
-        button.label = _('Refresh login');
+        row.subtitle = signedInSubtitle(_('Signed in with the Codex CLI'), credentials.email);
+        setAccountButton(button, true);
         return true;
     }
-    row.subtitle = _('Not signed in');
-    button.label = _('Sign in');
+    row.subtitle = signedOutSubtitle('codex');
+    setAccountButton(button, false);
     return false;
+}
+
+function setAccountButton(button, signedIn) {
+    button.visible = !signedIn;
+    button.label = _('Sign in');
+}
+
+function signedOutSubtitle(provider) {
+    const command = providerLoginCommandText(provider);
+    return command ? `${_('Not signed in')}. ${command}` : _('Not signed in');
 }
 
 function pollUntil(callback) {
