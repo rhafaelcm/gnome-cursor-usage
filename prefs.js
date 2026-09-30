@@ -205,9 +205,8 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         claudeButton.add_css_class('suggested-action');
         claudeButton.connect('clicked', () => {
             startClaudeLogin();
-            window._cancelPolls.push(pollUntil(() => {
-                return Promise.resolve(updateClaudeStatus(settings, claudeStatus, claudeButton));
-            }));
+            window._cancelPolls.push(pollUntil(() =>
+                updateClaudeStatus(settings, claudeStatus, claudeButton)));
         });
         claudeStatus.add_suffix(claudeButton);
         claudeStatus.activatable_widget = claudeButton;
@@ -239,9 +238,8 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         codexButton.add_css_class('suggested-action');
         codexButton.connect('clicked', () => {
             startCodexLogin();
-            window._cancelPolls.push(pollUntil(() => {
-                return Promise.resolve(updateCodexStatus(settings, codexStatus, codexButton));
-            }));
+            window._cancelPolls.push(pollUntil(() =>
+                updateCodexStatus(settings, codexStatus, codexButton)));
         });
         codexStatus.add_suffix(codexButton);
         codexStatus.activatable_widget = codexButton;
@@ -313,18 +311,18 @@ function displayUserPath(path) {
     return text;
 }
 
-function firstExistingPath(paths) {
+async function firstExistingPath(paths) {
     for (const path of paths) {
-        if (isRegularFile(path))
+        if (await isRegularFile(path))
             return path;
     }
     return paths[0] || '';
 }
 
-function applyPathStatus(row, defaultPath, override = '') {
+async function applyPathStatus(row, defaultPath, override = '') {
     const custom = expandUserPath(override);
     const using = custom || defaultPath;
-    const found = isRegularFile(using) ? _('Found') : _('Not found');
+    const found = await isRegularFile(using) ? _('Found') : _('Not found');
     row.title = displayUserPath(using) || _('No path');
     if (custom)
         row.subtitle = `${_('Custom')} · ${found}. ${_('Default:')} ${displayUserPath(defaultPath)}`;
@@ -332,12 +330,15 @@ function applyPathStatus(row, defaultPath, override = '') {
         row.subtitle = `${_('Default')} · ${found}`;
 }
 
-function updatePathRows(settings, rows) {
-    applyPathStatus(rows.cursorDb, defaultCursorStateDb(), settings.get_string('cursor-state-db'));
-    applyPathStatus(rows.cursorAuth, defaultCursorAuthJson(), settings.get_string('cursor-auth-json'));
-    applyPathStatus(rows.claudeAuth, defaultClaudeAuthJsons()[0] || '', settings.get_string('claude-auth-json'));
-    applyPathStatus(rows.claudeApi, defaultAnthropicCredentialJson());
-    applyPathStatus(rows.codexAuth, firstExistingPath(defaultCodexAuthJsons()), settings.get_string('codex-auth-json'));
+async function updatePathRows(settings, rows) {
+    const codexDefault = await firstExistingPath(defaultCodexAuthJsons());
+    await Promise.all([
+        applyPathStatus(rows.cursorDb, defaultCursorStateDb(), settings.get_string('cursor-state-db')),
+        applyPathStatus(rows.cursorAuth, defaultCursorAuthJson(), settings.get_string('cursor-auth-json')),
+        applyPathStatus(rows.claudeAuth, defaultClaudeAuthJsons()[0] || '', settings.get_string('claude-auth-json')),
+        applyPathStatus(rows.claudeApi, defaultAnthropicCredentialJson()),
+        applyPathStatus(rows.codexAuth, codexDefault, settings.get_string('codex-auth-json')),
+    ]);
 }
 
 function signedInSubtitle(base, email) {
@@ -412,8 +413,8 @@ async function updateCursorStatus(settings, row, button) {
     return false;
 }
 
-function updateClaudeStatus(settings, row, button) {
-    const credentials = readClaudeCredentials(resolveClaudePaths(settings));
+async function updateClaudeStatus(settings, row, button) {
+    const credentials = await readClaudeCredentials(resolveClaudePaths(settings));
     if (credentials?.accessToken) {
         const base = credentials.source === 'claude-api'
             ? _('Signed in with Claude API')
@@ -427,8 +428,8 @@ function updateClaudeStatus(settings, row, button) {
     return false;
 }
 
-function updateCodexStatus(settings, row, button) {
-    const credentials = readCodexCredentials(resolveCodexPaths(settings));
+async function updateCodexStatus(settings, row, button) {
+    const credentials = await readCodexCredentials(resolveCodexPaths(settings));
     if (credentials?.accessToken) {
         row.subtitle = signedInSubtitle(_('Signed in with the Codex CLI'), credentials.email);
         setAccountButton(button, true);

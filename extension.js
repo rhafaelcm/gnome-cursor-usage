@@ -221,9 +221,9 @@ export default class CursorUsageExtension extends Extension {
         if (!this._settings)
             return false;
         if (provider === 'codex')
-            return Boolean(readCodexCredentials(resolveCodexPaths(this._settings))?.accessToken);
+            return Boolean((await readCodexCredentials(resolveCodexPaths(this._settings)))?.accessToken);
         if (provider === 'claude')
-            return Boolean(readClaudeCredentials(resolveClaudePaths(this._settings))?.accessToken);
+            return Boolean((await readClaudeCredentials(resolveClaudePaths(this._settings)))?.accessToken);
         const credentials = await readCursorCredentials(resolveCursorPaths(this._settings));
         return Boolean(credentials?.accessToken);
     }
