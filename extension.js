@@ -56,23 +56,20 @@ export default class CursorUsageExtension extends Extension {
     disable() {
         this._stopTimer();
         this._stopPoll();
-        if (this._cancellable) {
-            this._cancellable.cancel();
-            this._cancellable = null;
-        }
-        if (this._indicator && this._openId) {
+        this._cancellable.cancel();
+        this._cancellable = null;
+        if (this._openId) {
             this._indicator.menu.disconnect(this._openId);
             this._openId = 0;
         }
-        if (this._settings && this._settingsId) {
+        if (this._settingsId) {
             this._settings.disconnect(this._settingsId);
             this._settingsId = 0;
         }
-        this._http?.destroy();
+        this._http.destroy();
         this._http = null;
-        const indicator = this._indicator;
+        this._indicator.destroy();
         this._indicator = null;
-        indicator?.destroy();
         this._cursorClient = null;
         this._claudeClient = null;
         this._codexClient = null;
@@ -177,14 +174,14 @@ export default class CursorUsageExtension extends Extension {
 
     _stopTimer() {
         if (this._timeoutId) {
-            GLib.source_remove(this._timeoutId);
+            GLib.Source.remove(this._timeoutId);
             this._timeoutId = 0;
         }
     }
 
     _stopPoll() {
         if (this._pollId) {
-            GLib.source_remove(this._pollId);
+            GLib.Source.remove(this._pollId);
             this._pollId = 0;
         }
     }

@@ -146,6 +146,7 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
             icon_name: 'system-users-symbolic',
         });
         window.add(accounts);
+        window.add(createAboutPage(this.metadata));
 
         const cursorGroup = new Adw.PreferencesGroup({
             title: _('Cursor'),
@@ -190,7 +191,9 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
 
         const claudeGroup = new Adw.PreferencesGroup({
             title: _('Claude Code'),
-            description: `${claudeAuthHelp()} ${_('The extension reads the local Claude Code token. Leave the path empty to use the default. Fill it only if Claude Code is installed somewhere else.')}`,
+            description: `${claudeAuthHelp()} ${_(
+                'The extension reads the local Claude Code token. Leave the path empty to use the default. Fill it only if Claude Code is installed somewhere else.'
+            )}`,
         });
         accounts.add(claudeGroup);
 
@@ -279,6 +282,46 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
     }
 }
 
+function createAboutPage(metadata) {
+    const page = new Adw.PreferencesPage({
+        title: _('About'),
+        icon_name: 'help-about-symbolic',
+    });
+    const details = new Adw.PreferencesGroup({
+        title: metadata.name,
+        description: metadata.description,
+    });
+    page.add(details);
+
+    details.add(new Adw.ActionRow({
+        title: _('Version'),
+        subtitle: metadata['version-name'],
+    }));
+    details.add(new Adw.ActionRow({
+        title: _('License'),
+        subtitle: 'MIT License',
+    }));
+    details.add(new Adw.ActionRow({
+        title: _('Copyright'),
+        subtitle: '© 2026 Rhafael',
+    }));
+
+    const website = new Adw.ActionRow({
+        title: _('Project website'),
+        subtitle: metadata.url,
+    });
+    const websiteButton = new Gtk.LinkButton({
+        label: _('Open'),
+        uri: metadata.url,
+        valign: Gtk.Align.CENTER,
+    });
+    website.add_suffix(websiteButton);
+    website.activatable_widget = websiteButton;
+    details.add(website);
+
+    return page;
+}
+
 const RESET_SETTING_KEYS = [
     'refresh-interval',
     'show-percentage',
@@ -359,29 +402,7 @@ function resetExtensionSettings(settings) {
 function confirmResetSettings(window, settings) {
     const heading = _('Reset settings?');
     const body = _('Restore the default refresh interval, providers, and credential paths. Login files on disk are not deleted.');
-    const onResponse = response => {
-        if (response === 'reset')
-            resetExtensionSettings(settings);
-    };
-
-    if (Adw.AlertDialog) {
-        const dialog = new Adw.AlertDialog({
-            heading,
-            body,
-        });
-        dialog.add_response('cancel', _('Cancel'));
-        dialog.add_response('reset', _('Reset'));
-        dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
-        dialog.set_default_response('cancel');
-        dialog.set_close_response('cancel');
-        dialog.connect('response', (_dialog, response) => onResponse(response));
-        dialog.present(window);
-        return;
-    }
-
-    const dialog = new Adw.MessageDialog({
-        transient_for: window,
-        modal: true,
+    const dialog = new Adw.AlertDialog({
         heading,
         body,
     });
@@ -390,23 +411,22 @@ function confirmResetSettings(window, settings) {
     dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
     dialog.set_default_response('cancel');
     dialog.set_close_response('cancel');
-    dialog.connect('response', (_dialog, response) => onResponse(response));
-    dialog.present();
+    dialog.connect('response', (_dialog, response) => {
+        if (response === 'reset')
+            resetExtensionSettings(settings);
+    });
+    dialog.present(window);
 }
 
 async function updateCursorStatus(settings, row, button) {
-    try {
-        const credentials = await readCursorCredentials(resolveCursorPaths(settings));
-        if (credentials?.accessToken) {
-            const base = credentials.source === 'ide'
-                ? _('Signed in with the Cursor app')
-                : _('Signed in with cursor-agent');
-            row.subtitle = signedInSubtitle(base, credentials.email);
-            setAccountButton(button, true);
-            return true;
-        }
-    } catch {
-        // Fall through to the signed-out copy.
+    const credentials = await readCursorCredentials(resolveCursorPaths(settings));
+    if (credentials?.accessToken) {
+        const base = credentials.source === 'ide'
+            ? _('Signed in with the Cursor app')
+            : _('Signed in with cursor-agent');
+        row.subtitle = signedInSubtitle(base, credentials.email);
+        setAccountButton(button, true);
+        return true;
     }
     row.subtitle = signedOutSubtitle('cursor');
     setAccountButton(button, false);
@@ -457,7 +477,7 @@ function pollUntil(callback) {
     const tick = () => {
         if (cancelled)
             return;
-        Promise.resolve(callback()).then(done => {
+        Promise.resolve(callback()).catch(() => false).then(done => {
             if (cancelled || done)
                 return;
             attempts += 1;
@@ -468,13 +488,13 @@ function pollUntil(callback) {
                 tick();
                 return GLib.SOURCE_REMOVE;
             });
-        }).catch(() => {});
+        });
     };
     tick();
     return () => {
         cancelled = true;
         if (sourceId) {
-            GLib.source_remove(sourceId);
+            GLib.Source.remove(sourceId);
             sourceId = 0;
         }
     };
