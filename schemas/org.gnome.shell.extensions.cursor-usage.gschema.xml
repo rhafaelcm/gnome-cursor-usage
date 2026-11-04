@@ -12,6 +12,20 @@
       <summary>Show percentage on the panel</summary>
       <description>Display the active provider usage percentage next to the icon.</description>
     </key>
+    <key name="language" type="s">
+      <default>"system"</default>
+      <choices>
+        <choice value="system"/>
+        <choice value="en"/>
+        <choice value="pt"/>
+        <choice value="pt-BR"/>
+        <choice value="es"/>
+        <choice value="fr"/>
+        <choice value="de"/>
+      </choices>
+      <summary>Interface language</summary>
+      <description>Follow the system language or use a language selected for this extension.</description>
+    </key>
     <key name="enable-cursor" type="b">
       <default>true</default>
       <summary>Enable Cursor</summary>

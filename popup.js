@@ -2,7 +2,6 @@ import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
@@ -13,6 +12,7 @@ import {
     tokenTotal,
 } from './lib/format.js';
 import {providerAuthHelp, providerLoginCommandText} from './lib/login.js';
+import {gettext as _} from './lib/i18n.js';
 import {listEnabledProviders, pickRecord} from './lib/providers.js';
 import {createBar, createBox, loadUsageIcon} from './lib/ui.js';
 

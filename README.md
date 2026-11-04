@@ -135,6 +135,7 @@ Those APIs do not provide per-day token charts like Cursor.
 ## Preferences
 
 - Show or hide the panel percentage
+- Follow the system language or select English, Portuguese, Brazilian Portuguese, Spanish, French, or German
 - Enable Cursor, Claude Code, Codex, or any combination
 - Default provider for the panel
 - Refresh interval

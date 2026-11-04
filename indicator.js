@@ -2,10 +2,10 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {formatPercent} from './lib/format.js';
+import {gettext as _} from './lib/i18n.js';
 import {pickRecord} from './lib/providers.js';
 import {createBox, loadUsageIcon} from './lib/ui.js';
 import {UsagePopup} from './popup.js';

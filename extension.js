@@ -16,6 +16,7 @@ import {
 } from './lib/credentials.js';
 import {createRecord} from './lib/format.js';
 import {HttpClient, isCancelled} from './lib/http.js';
+import {configureLanguage} from './lib/i18n.js';
 import {CursorClient} from './lib/cursor.js';
 import {startProviderLogin} from './lib/login.js';
 import {isProviderId, listEnabledProviders, resolveActiveProvider} from './lib/providers.js';
@@ -24,6 +25,7 @@ import {UsageIndicator} from './indicator.js';
 export default class CursorUsageExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
+        configureLanguage(this._settings.get_string('language'));
         this._http = new HttpClient();
         this._cancellable = new Gio.Cancellable();
         this._cursorClient = new CursorClient(this._http);
@@ -37,13 +39,7 @@ export default class CursorUsageExtension extends Extension {
         this._claude = createRecord('claude', 'Claude Code');
         this._codex = createRecord('codex', 'Codex');
 
-        this._indicator = new UsageIndicator(this);
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
-
-        this._openId = this._indicator.menu.connect('open-state-changed', (_menu, open) => {
-            if (open)
-                this.refresh({full: true});
-        });
+        this._createIndicator();
         this._settingsId = this._settings.connect('changed', (_settings, key) => {
             this._onSettingsChanged(key);
         });
@@ -58,18 +54,13 @@ export default class CursorUsageExtension extends Extension {
         this._stopPoll();
         this._cancellable.cancel();
         this._cancellable = null;
-        if (this._openId) {
-            this._indicator.menu.disconnect(this._openId);
-            this._openId = 0;
-        }
+        this._destroyIndicator();
         if (this._settingsId) {
             this._settings.disconnect(this._settingsId);
             this._settingsId = 0;
         }
         this._http.destroy();
         this._http = null;
-        this._indicator.destroy();
-        this._indicator = null;
         this._cursorClient = null;
         this._claudeClient = null;
         this._codexClient = null;
@@ -159,8 +150,34 @@ export default class CursorUsageExtension extends Extension {
             this._pushState();
             return;
         }
+        if (key === 'language') {
+            configureLanguage(this._settings.get_string('language'));
+            this._cursor = createRecord('cursor', 'Cursor');
+            this._claude = createRecord('claude', 'Claude Code');
+            this._codex = createRecord('codex', 'Codex');
+            this._destroyIndicator();
+            this._createIndicator();
+        }
         this._lastFullRefresh = 0;
         this.refresh({full: false, force: true});
+    }
+
+    _createIndicator() {
+        this._indicator = new UsageIndicator(this);
+        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        this._openId = this._indicator.menu.connect('open-state-changed', (_menu, open) => {
+            if (open)
+                this.refresh({full: true});
+        });
+    }
+
+    _destroyIndicator() {
+        if (this._openId) {
+            this._indicator.menu.disconnect(this._openId);
+            this._openId = 0;
+        }
+        this._indicator.destroy();
+        this._indicator = null;
     }
 
     _startTimer() {

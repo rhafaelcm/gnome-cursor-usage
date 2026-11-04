@@ -3,7 +3,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
-import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {
     defaultAnthropicCredentialJson,
@@ -30,11 +30,18 @@ import {
     startCursorLogin,
 } from './lib/login.js';
 import {pickAccountEmail} from './lib/format.js';
+import {
+    configureLanguage,
+    gettext as _,
+    languageIndex,
+    LANGUAGE_OPTIONS,
+} from './lib/i18n.js';
 import {PROVIDER_IDS} from './lib/providers.js';
 
 export default class CursorUsagePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+        configureLanguage(settings.get_string('language'));
         const providerLabels = [_('Cursor'), _('Claude Code'), _('Codex')];
         window._settings = settings;
         window._cancelPolls = [];
@@ -58,6 +65,32 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
         });
         settings.bind('show-percentage', showPercentage, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearance.add(showPercentage);
+
+        const languageGroup = new Adw.PreferencesGroup({
+            title: _('Language'),
+            description: _('Follow the system language or choose one for this extension'),
+        });
+        general.add(languageGroup);
+
+        const language = new Adw.ComboRow({
+            title: _('Interface language'),
+            subtitle: _('Reopen Preferences to update all labels after changing the language.'),
+            model: Gtk.StringList.new(LANGUAGE_OPTIONS.map(option => {
+                return option.id === 'system' ? _('System default') : option.name;
+            })),
+            selected: languageIndex(settings.get_string('language')),
+        });
+        language.connect('notify::selected', () => {
+            const selected = LANGUAGE_OPTIONS[language.selected].id;
+            configureLanguage(selected);
+            settings.set_string('language', selected);
+            language.subtitle = _('Reopen Preferences to update all labels after changing the language.');
+        });
+        const languageId = settings.connect('changed::language', () => {
+            language.selected = languageIndex(settings.get_string('language'));
+        });
+        window.connect('destroy', () => settings.disconnect(languageId));
+        languageGroup.add(language);
 
         const providers = new Adw.PreferencesGroup({
             title: _('Providers'),
@@ -127,7 +160,7 @@ export default class CursorUsagePreferences extends ExtensionPreferences {
 
         const resetRow = new Adw.ActionRow({
             title: _('Reset settings'),
-            subtitle: _('Interval, providers, and credential path overrides'),
+            subtitle: _('Interval, providers, language, and credential path overrides'),
         });
         const resetButton = new Gtk.Button({
             label: _('Reset settings'),
@@ -289,7 +322,7 @@ function createAboutPage(metadata) {
     });
     const details = new Adw.PreferencesGroup({
         title: metadata.name,
-        description: metadata.description,
+        description: _('Shows Cursor, Claude Code, and Codex plan usage in the GNOME top bar.'),
     });
     page.add(details);
 
@@ -325,6 +358,7 @@ function createAboutPage(metadata) {
 const RESET_SETTING_KEYS = [
     'refresh-interval',
     'show-percentage',
+    'language',
     'active-provider',
     'enable-cursor',
     'enable-claude',
@@ -401,7 +435,7 @@ function resetExtensionSettings(settings) {
 
 function confirmResetSettings(window, settings) {
     const heading = _('Reset settings?');
-    const body = _('Restore the default refresh interval, providers, and credential paths. Login files on disk are not deleted.');
+    const body = _('Restore the default refresh interval, providers, language, and credential paths. Login files on disk are not deleted.');
     const dialog = new Adw.AlertDialog({
         heading,
         body,
